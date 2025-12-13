@@ -47,7 +47,7 @@ def create_driver(
         use_undetected: If True (default), use undetected-chromedriver to bypass bot detection.
                        Set to False to use regular Selenium (for sites that don't need it).
         use_stealth_wrapper: If True, use sb-stealth-wrapper for maximum anti-detection.
-                            Best for sites like Gmail that still detect undetected-chromedriver.
+                            Best for sites with strong bot detection (Cloudflare, etc.).
                             Returns a StealthBot instance instead of a WebDriver.
         
     Returns:
@@ -93,7 +93,7 @@ def _create_stealth_wrapper_driver(profile_path: Optional[str], headless: bool) 
     """
     Create a StealthBot driver using sb-stealth-wrapper for maximum anti-detection.
     
-    This is the best option for sites like Gmail that still detect undetected-chromedriver.
+    This is the best option for sites with strong bot detection (Cloudflare, DataDome, etc.).
     Returns a StealthBot context manager that can be used directly.
     
     Note: StealthBot uses SeleniumBase internally. To save/restore cookies:
@@ -107,17 +107,17 @@ def _create_stealth_wrapper_driver(profile_path: Optional[str], headless: bool) 
         >>> import os
         >>> 
         >>> with create_driver(use_stealth_wrapper=True) as bot:
-        ...     bot.safe_get("https://mail.google.com")
+        ...     bot.safe_get("https://news.ycombinator.com")
         ...     
         ...     # Restore cookies if they exist
-        ...     if os.path.exists("saved_cookies/gmail.txt"):
-        ...         bot.sb.load_cookies(name="gmail")
+        ...     if os.path.exists("saved_cookies/hn_session.txt"):
+        ...         bot.sb.load_cookies(name="hn_session")
         ...         bot.sb.refresh()
         ...     
         ...     # ... do your work ...
         ...     
         ...     # Save cookies for next time
-        ...     bot.sb.save_cookies(name="gmail")
+        ...     bot.sb.save_cookies(name="hn_session")
     """
     try:
         from sb_stealth_wrapper import StealthBot
@@ -722,9 +722,9 @@ class Teleport:
         >>> driver = create_driver(profile_path="my_profile")
         >>> with Teleport(driver, "session_state.json") as teleport:
         ...     if teleport.has_state():
-        ...         teleport.load("https://mail.google.com")
+        ...         teleport.load("https://news.ycombinator.com")
         ...     else:
-        ...         driver.get("https://mail.google.com")
+        ...         driver.get("https://news.ycombinator.com/login")
         ...         # ... manual login ...
         ...     
         ...     # Do your testing

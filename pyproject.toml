@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "selenium-teleport"
-version = "2.0.0"
+version = "2.0.1"
 description = "Save and restore browser state (Cookies, LocalStorage, SessionStorage) to instantly skip login screens in Selenium automation."
 readme = "README.md"
 license = {text = "MIT"}
