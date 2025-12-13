@@ -7,7 +7,7 @@ Automating checkouts or complex workflows is hard because **logging in every tim
 
 Most developers try to save cookies, but it fails because:
 1.  **Missing Data**: Modern sites use `LocalStorage` and `SessionStorage` for auth tokens, not just cookies.
-2.  **Security Blocks**: Trying to inject cookies into a blank tab (`data:,`) fails due to the **Same-Origin Policy**. You can't set a cookie for `google.com` while you are on `about:blank`.
+2.  **Security Blocks**: Trying to inject cookies into a blank tab (`data:,`) fails due to the **Same-Origin Policy**. You can't set a cookie for `example.com` while you are on `about:blank`.
 3.  **Bot Detection**: Repeated logins flag your IP/Account as suspicious.
 
 ## ✅ The Solution: Teleport
