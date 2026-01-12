@@ -14,10 +14,10 @@ logger = logging.getLogger(__name__)
 def get_local_storage(driver) -> Dict[str, Any]:
     """
     Extract localStorage from the browser.
-    
+
     Args:
         driver: Selenium WebDriver instance
-        
+
     Returns:
         Dictionary of localStorage key-value pairs
     """
@@ -27,10 +27,10 @@ def get_local_storage(driver) -> Dict[str, Any]:
 def get_session_storage(driver) -> Dict[str, Any]:
     """
     Extract sessionStorage from the browser.
-    
+
     Args:
         driver: Selenium WebDriver instance
-        
+
     Returns:
         Dictionary of sessionStorage key-value pairs
     """
@@ -58,7 +58,7 @@ def _get_storage(driver, storage_type: str) -> Dict[str, Any]:
 def set_local_storage(driver, data: Dict[str, Any]) -> None:
     """
     Inject data into localStorage.
-    
+
     Args:
         driver: Selenium WebDriver instance
         data: Dictionary of key-value pairs to inject
@@ -69,7 +69,7 @@ def set_local_storage(driver, data: Dict[str, Any]) -> None:
 def set_session_storage(driver, data: Dict[str, Any]) -> None:
     """
     Inject data into sessionStorage.
-    
+
     Args:
         driver: Selenium WebDriver instance
         data: Dictionary of key-value pairs to inject
@@ -81,7 +81,7 @@ def _set_storage(driver, storage_type: str, data: Dict[str, Any]) -> None:
     """Inject data into localStorage or sessionStorage."""
     if not data:
         return
-    
+
     try:
         for key, value in data.items():
             escaped_value = json.dumps(value)
@@ -95,13 +95,13 @@ def _set_storage(driver, storage_type: str, data: Dict[str, Any]) -> None:
 def get_indexeddb_info(driver) -> Dict[str, Any]:
     """
     Extract IndexedDB database information from the browser.
-    
+
     This captures database names and object store names used by modern web apps.
     Note: Full data extraction is not performed due to complexity.
-    
+
     Args:
         driver: Selenium WebDriver instance
-        
+
     Returns:
         Dictionary with database names as keys and info as values
     """
@@ -160,7 +160,7 @@ def get_indexeddb_info(driver) -> Dict[str, Any]:
 def clear_storage(driver, storage_type: str = "all") -> None:
     """
     Clear browser storage.
-    
+
     Args:
         driver: Selenium WebDriver instance
         storage_type: "localStorage", "sessionStorage", or "all"
@@ -169,7 +169,7 @@ def clear_storage(driver, storage_type: str = "all") -> None:
         if storage_type in ("localStorage", "all"):
             driver.execute_script("localStorage.clear();")
             logger.debug("Cleared localStorage")
-        
+
         if storage_type in ("sessionStorage", "all"):
             driver.execute_script("sessionStorage.clear();")
             logger.debug("Cleared sessionStorage")

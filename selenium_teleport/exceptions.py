@@ -48,7 +48,9 @@ class DomainMismatchError(SecurityError):
     """Raised when state domain doesn't match target domain."""
 
     def __init__(self, state_domain: str, target_domain: str):
-        message = f"Domain mismatch: state from '{state_domain}' cannot be loaded to '{target_domain}'"
+        message = (
+            f"Domain mismatch: state from '{state_domain}' cannot be loaded to '{target_domain}'"
+        )
         super().__init__(message, {"state_domain": state_domain, "target_domain": target_domain})
         self.state_domain = state_domain
         self.target_domain = target_domain

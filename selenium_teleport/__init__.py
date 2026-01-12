@@ -16,15 +16,15 @@ Features:
 
 Quick Start:
     >>> from selenium_teleport import create_driver, Teleport
-    >>> 
+    >>>
     >>> driver = create_driver(profile_path="my_profile")
-    >>> 
+    >>>
     >>> with Teleport(driver, "session.json") as t:
     ...     if t.has_state():
     ...         t.load("https://example.com/dashboard")
     ...     else:
     ...         driver.get("https://example.com/login")
-    >>> 
+    >>>
     >>> driver.quit()
 
 With Encryption:
@@ -38,21 +38,11 @@ __version__ = "2.1.0"
 __author__ = "Dhiraj Das"
 __license__ = "MIT"
 
-# Core driver creation
-from .drivers import create_driver
-
-# State management (main API)
-from .state import (
-    save_state,
-    load_state,
-    delete_state,
-    get_state_info,
-)
-
-# StealthBot-compatible functions
-from .stealth import (
-    save_state_stealth,
-    load_state_stealth,
+# Configuration
+from .config import (
+    TeleportConfig,
+    get_config,
+    set_config,
 )
 
 # Context managers
@@ -61,37 +51,47 @@ from .context import (
     teleport_session,
 )
 
-# Configuration
-from .config import (
-    TeleportConfig,
-    get_config,
-    set_config,
+# Core driver creation
+from .drivers import create_driver
+
+# Exceptions
+from .exceptions import (
+    DomainMismatchError,
+    DriverError,
+    DriverNotFoundError,
+    EncryptionError,
+    ExpiredSessionError,
+    InvalidStateError,
+    PathTraversalError,
+    SecurityError,
+    SSRFError,
+    StateError,
+    StateFileNotFoundError,
+    TeleportError,
+    ValidationError,
 )
 
 # Security utilities
 from .security import (
-    generate_key,
-    encrypt_state,
     decrypt_state,
-    validate_domain_match,
+    encrypt_state,
+    generate_key,
     remove_expired_cookies,
+    validate_domain_match,
 )
 
-# Exceptions
-from .exceptions import (
-    TeleportError,
-    SecurityError,
-    StateError,
-    DriverError,
-    ValidationError,
-    EncryptionError,
-    DomainMismatchError,
-    PathTraversalError,
-    SSRFError,
-    ExpiredSessionError,
-    StateFileNotFoundError,
-    InvalidStateError,
-    DriverNotFoundError,
+# State management (main API)
+from .state import (
+    delete_state,
+    get_state_info,
+    load_state,
+    save_state,
+)
+
+# StealthBot-compatible functions
+from .stealth import (
+    load_state_stealth,
+    save_state_stealth,
 )
 
 __all__ = [

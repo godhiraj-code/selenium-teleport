@@ -4,9 +4,9 @@ Selenium Teleport - Utility Functions
 URL helpers and general utilities used across the library.
 """
 
-from urllib.parse import urlparse
-from typing import Optional
 import logging
+from typing import Optional
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 def extract_base_domain(url: str) -> str:
     """
     Extract the base domain from a URL.
-    
-    Example: 
+
+    Example:
         "https://example.com/checkout/v2" -> "https://example.com"
         "https://mail.google.com:8080/inbox" -> "https://mail.google.com:8080"
     """
@@ -26,7 +26,7 @@ def extract_base_domain(url: str) -> str:
 def normalize_url(url: str) -> str:
     """
     Normalize a URL for consistent comparison.
-    
+
     - Removes trailing slashes
     - Lowercases the scheme and host
     """
@@ -34,18 +34,18 @@ def normalize_url(url: str) -> str:
     scheme = parsed.scheme.lower()
     netloc = parsed.netloc.lower()
     path = parsed.path.rstrip("/") or "/"
-    
+
     normalized = f"{scheme}://{netloc}{path}"
     if parsed.query:
         normalized += f"?{parsed.query}"
-    
+
     return normalized
 
 
 def get_domain_from_url(url: str) -> str:
     """
     Get just the domain/host from a URL.
-    
+
     Example:
         "https://example.com:8080/path" -> "example.com"
     """
@@ -59,11 +59,8 @@ def is_same_origin(url1: str, url2: str) -> bool:
     """
     parsed1 = urlparse(url1)
     parsed2 = urlparse(url2)
-    
-    return (
-        parsed1.scheme == parsed2.scheme
-        and parsed1.netloc == parsed2.netloc
-    )
+
+    return parsed1.scheme == parsed2.scheme and parsed1.netloc == parsed2.netloc
 
 
 def ensure_scheme(url: str, default_scheme: str = "https") -> str:

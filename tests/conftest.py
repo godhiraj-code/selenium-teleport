@@ -5,7 +5,7 @@ Pytest configuration and fixtures for selenium-teleport tests.
 import json
 import os
 import tempfile
-from typing import Dict, Any
+from typing import Any, Dict
 from unittest.mock import MagicMock
 
 import pytest
@@ -22,7 +22,7 @@ def temp_dir():
 def sample_state() -> Dict[str, Any]:
     """Create a sample browser state for testing."""
     import time
-    
+
     return {
         "metadata": {
             "saved_at": "2024-01-15T10:30:00",
@@ -63,7 +63,7 @@ def sample_state() -> Dict[str, Any]:
 def expired_state() -> Dict[str, Any]:
     """Create a state with expired cookies."""
     import time
-    
+
     return {
         "metadata": {
             "saved_at": "2024-01-01T10:30:00",
@@ -107,7 +107,7 @@ def mock_driver():
             "path": "/",
         }
     ]
-    
+
     # Mock execute_script for storage extraction
     def mock_execute_script(script):
         if "localStorage" in script and "return" in script:
@@ -117,9 +117,9 @@ def mock_driver():
         if "indexedDB" in script:
             return {}
         return None
-    
+
     driver.execute_script.side_effect = mock_execute_script
-    
+
     return driver
 
 
@@ -129,6 +129,7 @@ def encryption_key():
     # Import here to avoid errors if cryptography not installed
     try:
         from selenium_teleport.security import generate_key
+
         return generate_key()
     except ImportError:
         pytest.skip("cryptography not installed")
