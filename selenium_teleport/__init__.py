@@ -8,10 +8,11 @@ skip login screens and setup flows in Selenium automation scripts.
 Features:
     - Persistent Chrome profile for maximum compatibility
     - Anti-detection measures built-in
-    - Save complete browser state to a JSON file
+    - Save complete browser state to a JSON file (with optional encryption)
     - Restore state and "teleport" to any authenticated page
     - Context manager for automatic state management
     - StealthBot-compatible functions for sb-stealth-wrapper
+    - Security features: encryption, domain validation, path sanitization
 
 Quick Start:
     >>> from selenium_teleport import create_driver, Teleport
@@ -25,34 +26,112 @@ Quick Start:
     ...         driver.get("https://example.com/login")
     >>> 
     >>> driver.quit()
+
+With Encryption:
+    >>> # Set TELEPORT_ENCRYPTION_KEY environment variable
+    >>> with Teleport(driver, "session.enc", encrypt=True) as t:
+    ...     # State is automatically encrypted/decrypted
+    ...     pass
 """
 
-__version__ = "2.0.0"
-__author__ = "Selenium Teleport Contributors"
+__version__ = "2.1.0"
+__author__ = "Dhiraj Das"
 __license__ = "MIT"
 
-from .core import (
-    # Main driver creation
-    create_driver,
-    # Core functions
+# Core driver creation
+from .drivers import create_driver
+
+# State management (main API)
+from .state import (
     save_state,
     load_state,
-    # StealthBot-compatible functions
+    delete_state,
+    get_state_info,
+)
+
+# StealthBot-compatible functions
+from .stealth import (
     save_state_stealth,
     load_state_stealth,
-    # Context managers
+)
+
+# Context managers
+from .context import (
     Teleport,
     teleport_session,
 )
 
+# Configuration
+from .config import (
+    TeleportConfig,
+    get_config,
+    set_config,
+)
+
+# Security utilities
+from .security import (
+    generate_key,
+    encrypt_state,
+    decrypt_state,
+    validate_domain_match,
+    remove_expired_cookies,
+)
+
+# Exceptions
+from .exceptions import (
+    TeleportError,
+    SecurityError,
+    StateError,
+    DriverError,
+    ValidationError,
+    EncryptionError,
+    DomainMismatchError,
+    PathTraversalError,
+    SSRFError,
+    ExpiredSessionError,
+    StateFileNotFoundError,
+    InvalidStateError,
+    DriverNotFoundError,
+)
+
 __all__ = [
+    # Version
+    "__version__",
+    # Driver
     "create_driver",
+    # State management
     "save_state",
     "load_state",
+    "delete_state",
+    "get_state_info",
+    # Stealth
     "save_state_stealth",
     "load_state_stealth",
+    # Context managers
     "Teleport",
     "teleport_session",
-    "__version__",
+    # Configuration
+    "TeleportConfig",
+    "get_config",
+    "set_config",
+    # Security
+    "generate_key",
+    "encrypt_state",
+    "decrypt_state",
+    "validate_domain_match",
+    "remove_expired_cookies",
+    # Exceptions
+    "TeleportError",
+    "SecurityError",
+    "StateError",
+    "DriverError",
+    "ValidationError",
+    "EncryptionError",
+    "DomainMismatchError",
+    "PathTraversalError",
+    "SSRFError",
+    "ExpiredSessionError",
+    "StateFileNotFoundError",
+    "InvalidStateError",
+    "DriverNotFoundError",
 ]
-
