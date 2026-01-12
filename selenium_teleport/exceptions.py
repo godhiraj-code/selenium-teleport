@@ -4,7 +4,6 @@ Selenium Teleport - Custom Exceptions
 Hierarchical exception classes for better error handling and user feedback.
 """
 
-
 from typing import Any, Dict, Optional
 
 
