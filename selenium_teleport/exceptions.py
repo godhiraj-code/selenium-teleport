@@ -5,10 +5,13 @@ Hierarchical exception classes for better error handling and user feedback.
 """
 
 
+from typing import Any, Dict, Optional
+
+
 class TeleportError(Exception):
     """Base exception for all Teleport errors."""
 
-    def __init__(self, message: str, details: dict = None):
+    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
         super().__init__(message)
         self.message = message
         self.details = details or {}

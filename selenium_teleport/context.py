@@ -69,7 +69,7 @@ class Teleport:
         """Enter the context manager."""
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Exit the context manager. Saves state if no exception occurred."""
         if exc_type is None and self.auto_save:
             try:
@@ -82,7 +82,6 @@ class Teleport:
                 logger.info("Auto-saved state on successful exit")
             except Exception as e:
                 logger.error(f"Failed to auto-save state: {e}")
-        return False
 
     def has_state(self) -> bool:
         """Check if a state file exists."""
