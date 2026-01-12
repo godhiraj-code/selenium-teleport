@@ -2,6 +2,7 @@
 
 **Save and restore browser state (Cookies, LocalStorage, SessionStorage) to instantly skip login screens.**
 
+[![CI](https://github.com/godhiraj-code/selenium-teleport/actions/workflows/ci.yml/badge.svg)](https://github.com/godhiraj-code/selenium-teleport/actions/workflows/ci.yml)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-2.1.0-green.svg)](https://pypi.org/project/selenium-teleport/)
