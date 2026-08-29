@@ -139,6 +139,15 @@ class TestDomainValidation:
             is False
         )
 
+    def test_origin_match_includes_scheme_and_effective_port(self):
+        """Origin-bound storage must not cross scheme or non-default ports."""
+        from selenium_teleport.security import validate_origin_match
+
+        assert validate_origin_match("https://example.com", "https://example.com/path") is True
+        assert validate_origin_match("https://example.com:443", "https://example.com") is True
+        assert validate_origin_match("http://example.com", "https://example.com") is False
+        assert validate_origin_match("https://example.com:444", "https://example.com") is False
+
     def test_extract_root_domain(self):
         """Test root domain extraction."""
         from selenium_teleport.security import extract_root_domain
@@ -146,6 +155,7 @@ class TestDomainValidation:
         assert extract_root_domain("https://www.example.com/path") == "example.com"
         assert extract_root_domain("https://mail.google.com:8080") == "google.com"
         assert extract_root_domain("https://example.co.uk") == "example.co.uk"
+        assert extract_root_domain("https://user:pass@mail.example.com:443") == "example.com"
 
 
 class TestInputSanitization:
@@ -188,6 +198,12 @@ class TestInputSanitization:
 
         with pytest.raises(SSRFError):
             validate_url("http://localhost/admin")
+
+        with pytest.raises(SSRFError):
+            validate_url("http://[::1]/admin")
+
+        with pytest.raises(SSRFError):
+            validate_url("http://user:pass@127.0.0.1/admin")
 
     def test_valid_urls_allowed(self):
         """Test that valid public URLs are allowed."""

@@ -16,15 +16,19 @@ from .exceptions import (
     DomainMismatchError,
     ExpiredSessionError,
     InvalidStateError,
+    SecurityError,
     StateFileNotFoundError,
 )
 from .security import (
+    check_domain_allowed,
+    check_domain_blocked,
     decrypt_state,
     encrypt_state,
     is_encrypted,
     remove_expired_cookies,
     sanitize_file_path,
     validate_domain_match,
+    validate_origin_match,
     validate_url,
 )
 from .storage import (
@@ -198,11 +202,27 @@ def load_state(
     validate_domain = validate_domain and config.validate_domain
     validate_expiry = validate_expiry and config.validate_expiry
 
+    if not check_domain_allowed(destination_url):
+        raise SecurityError(
+            f"Destination domain is not in TELEPORT_ALLOWED_DOMAINS: {destination_url}"
+        )
+    if check_domain_blocked(destination_url):
+        raise SecurityError(f"Destination domain is blocked: {destination_url}")
+
     # Domain validation
     if validate_domain:
         source_domain = state.get("metadata", {}).get("source_domain", "")
-        if source_domain and not validate_domain_match(source_domain, destination_url):
-            raise DomainMismatchError(source_domain, destination_url)
+        if source_domain:
+            has_origin_storage = bool(
+                state.get("localStorage", {}) or state.get("sessionStorage", {})
+            )
+            domains_match = (
+                validate_origin_match(source_domain, destination_url)
+                if has_origin_storage
+                else validate_domain_match(source_domain, destination_url)
+            )
+            if not domains_match:
+                raise DomainMismatchError(source_domain, destination_url)
 
     cookies = state.get("cookies", [])
     local_storage = state.get("localStorage", {})

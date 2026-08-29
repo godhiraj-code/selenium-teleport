@@ -9,6 +9,7 @@ import os
 from contextlib import contextmanager
 from typing import Any, Dict, Optional
 
+from .exceptions import SecurityError
 from .security import sanitize_file_path
 from .state import load_state, save_state
 
@@ -176,6 +177,8 @@ def teleport_session(
                 encryption_key=encryption_key,
             )
             logger.info("Loaded existing state")
+        except SecurityError:
+            raise
         except Exception as e:
             logger.warning(f"Failed to load state, starting fresh: {e}")
 

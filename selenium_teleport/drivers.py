@@ -1,7 +1,7 @@
 """
 Selenium Teleport - Driver Creation Module
 
-Functions for creating WebDriver instances with anti-detection measures.
+Functions for creating WebDriver instances and optional stealth integrations.
 """
 
 import logging
@@ -18,15 +18,15 @@ def create_driver(
     profile_path: Optional[str] = None,
     headless: bool = False,
     browser: str = "chrome",
-    use_undetected: bool = True,
+    use_undetected: bool = False,
     use_stealth_wrapper: bool = False,
     success_criteria: Optional[str] = None,
     proxy: Optional[str] = None,
 ) -> Any:
     """
-    Create a WebDriver with persistent profile and anti-detection measures.
+    Create a WebDriver with a persistent profile and optional stealth integration.
 
-    By default, uses undetected-chromedriver for anti-detection.
+    By default, uses Selenium's regular Chrome driver. Undetected Chrome is opt-in.
 
     For sites with bot detection (Cloudflare, etc.), use use_stealth_wrapper=True
     which uses sb-stealth-wrapper for maximum stealth.
@@ -37,7 +37,7 @@ def create_driver(
                      sessions across runs.
         headless: If True, run browser in headless mode. Note: some sites detect headless.
         browser: Browser to use - 'chrome' or 'edge'. Default is 'chrome'.
-        use_undetected: If True (default), use undetected-chromedriver to bypass bot detection.
+        use_undetected: If True, use the optional undetected-chromedriver integration.
                        Set to False to use regular Selenium (for sites that don't need it).
         use_stealth_wrapper: If True, use sb-stealth-wrapper for maximum anti-detection.
                             Best for sites with strong bot detection (Cloudflare, etc.).

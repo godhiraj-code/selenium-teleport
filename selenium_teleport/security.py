@@ -254,7 +254,7 @@ def extract_root_domain(url: str) -> str:
         "https://example.com:8080/path" -> "example.com"
     """
     parsed = urlparse(url)
-    hostname = parsed.netloc.split(":")[0]  # Remove port
+    hostname = parsed.hostname or ""
 
     # Handle IP addresses
     try:
@@ -294,11 +294,25 @@ def validate_domain_match(state_domain: str, target_url: str, strict: bool = Fal
     if strict:
         parsed_state = urlparse(state_domain)
         parsed_target = urlparse(target_url)
-        state_host = parsed_state.netloc.split(":")[0]
-        target_host = parsed_target.netloc.split(":")[0]
+        state_host = parsed_state.hostname
+        target_host = parsed_target.hostname
         return state_host == target_host
 
     return state_root == target_root
+
+
+def validate_origin_match(state_origin: str, target_url: str) -> bool:
+    """Return whether two URLs have the same scheme, host, and effective port."""
+
+    def origin(url: str) -> Tuple[str, Optional[str], Optional[int]]:
+        parsed = urlparse(url)
+        default_port = 443 if parsed.scheme.lower() == "https" else 80
+        return parsed.scheme.lower(), parsed.hostname, parsed.port or default_port
+
+    try:
+        return origin(state_origin) == origin(target_url)
+    except ValueError:
+        return False
 
 
 def check_domain_allowed(url: str) -> bool:
@@ -345,18 +359,6 @@ PATH_TRAVERSAL_PATTERNS = [
     r"^~",  # Home directory expansion
     r"%2e%2e",  # URL-encoded ..
     r"%252e%252e",  # Double URL-encoded ..
-]
-
-# Private IP ranges for SSRF prevention
-PRIVATE_IP_RANGES = [
-    ipaddress.ip_network("10.0.0.0/8"),
-    ipaddress.ip_network("172.16.0.0/12"),
-    ipaddress.ip_network("192.168.0.0/16"),
-    ipaddress.ip_network("127.0.0.0/8"),
-    ipaddress.ip_network("169.254.0.0/16"),  # Link-local
-    ipaddress.ip_network("::1/128"),  # IPv6 loopback
-    ipaddress.ip_network("fc00::/7"),  # IPv6 private
-    ipaddress.ip_network("fe80::/10"),  # IPv6 link-local
 ]
 
 
@@ -423,7 +425,10 @@ def validate_url(url: str, allow_private: bool = False) -> Tuple[bool, str]:
     if not parsed.netloc:
         raise SSRFError(url, "No host specified")
 
-    hostname = parsed.netloc.split(":")[0]
+    hostname = parsed.hostname
+    if not hostname:
+        raise SSRFError(url, "No host specified")
+    hostname = hostname.rstrip(".").lower()
 
     # Block common internal hostnames (nosec: this is intentional for SSRF prevention)
     internal_hostnames = ["localhost", "127.0.0.1", "0.0.0.0", "::1"]  # nosec B104
@@ -434,9 +439,8 @@ def validate_url(url: str, allow_private: bool = False) -> Tuple[bool, str]:
     if not allow_private:
         try:
             ip = ipaddress.ip_address(hostname)
-            for network in PRIVATE_IP_RANGES:
-                if ip in network:
-                    raise SSRFError(url, f"Private IP address not allowed: {ip}")
+            if not ip.is_global:
+                raise SSRFError(url, f"Non-public IP address not allowed: {ip}")
         except ValueError:
             pass  # Not an IP address, hostname is fine
 

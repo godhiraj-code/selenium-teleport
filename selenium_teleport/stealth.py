@@ -12,14 +12,23 @@ from typing import Any, Dict, Optional
 
 from .config import get_config
 from .cookies import sanitize_cookie
-from .exceptions import ExpiredSessionError, InvalidStateError, StateFileNotFoundError
+from .exceptions import (
+    ExpiredSessionError,
+    InvalidStateError,
+    SecurityError,
+    StateFileNotFoundError,
+)
 from .security import (
+    check_domain_allowed,
+    check_domain_blocked,
     decrypt_state,
     encrypt_state,
     is_encrypted,
     remove_expired_cookies,
     sanitize_file_path,
     validate_domain_match,
+    validate_origin_match,
+    validate_url,
 )
 from .utils import extract_base_domain
 
@@ -193,6 +202,7 @@ def load_state_stealth(
         ...     load_state_stealth(bot, "state.json", "https://example.com/dashboard")
     """
     file_path = sanitize_file_path(file_path)
+    validate_url(destination_url)
 
     if not os.path.exists(file_path):
         raise StateFileNotFoundError(file_path)
@@ -217,20 +227,33 @@ def load_state_stealth(
     validate_domain = validate_domain and config.validate_domain
     validate_expiry = validate_expiry and config.validate_expiry
 
+    if not check_domain_allowed(destination_url):
+        raise SecurityError(
+            f"Destination domain is not in TELEPORT_ALLOWED_DOMAINS: {destination_url}"
+        )
+    if check_domain_blocked(destination_url):
+        raise SecurityError(f"Destination domain is blocked: {destination_url}")
+
+    cookies = state.get("cookies", [])
+    local_storage = state.get("localStorage", {})
+    session_storage = state.get("sessionStorage", {})
+
     # Domain validation
     if validate_domain:
         source_domain = state.get("metadata", {}).get("source_domain", "")
         if source_domain and source_domain != "unknown":
-            if not validate_domain_match(source_domain, destination_url):
+            has_origin_storage = bool(local_storage or session_storage)
+            domains_match = (
+                validate_origin_match(source_domain, destination_url)
+                if has_origin_storage
+                else validate_domain_match(source_domain, destination_url)
+            )
+            if not domains_match:
                 from .exceptions import DomainMismatchError
 
                 raise DomainMismatchError(source_domain, destination_url)
 
     sb = bot.sb
-
-    cookies = state.get("cookies", [])
-    local_storage = state.get("localStorage", {})
-    session_storage = state.get("sessionStorage", {})
 
     # Handle expired cookies
     if validate_expiry or remove_expired:

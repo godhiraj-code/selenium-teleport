@@ -1,310 +1,212 @@
-# 🚀 Selenium Teleport
+# Selenium Teleport
 
-**Save and restore browser state (Cookies, LocalStorage, SessionStorage) to instantly skip login screens.**
+Save and restore browser cookies, `localStorage`, and `sessionStorage` for Selenium sessions.
 
 [![CI](https://github.com/godhiraj-code/selenium-teleport/actions/workflows/ci.yml/badge.svg)](https://github.com/godhiraj-code/selenium-teleport/actions/workflows/ci.yml)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-2.1.0-green.svg)](https://pypi.org/project/selenium-teleport/)
+[![Version](https://img.shields.io/badge/version-2.1.1-green.svg)](https://pypi.org/project/selenium-teleport/)
 
-## 🛑 The Problem
+Selenium Teleport captures state from the browser's current origin, writes it to a file, then restores it after navigating a new browser to the destination origin. This can avoid repeated logins when the target site's authentication model accepts restored browser state.
 
-Automating checkouts or complex workflows is hard because **logging in every time is slow and triggers bot detection**.
+## What it saves
 
-Most developers try to save cookies, but it fails because:
-1.  **Missing Data**: Modern sites use `LocalStorage` and `SessionStorage` for auth tokens, not just cookies.
-2.  **Security Blocks**: Trying to inject cookies into a blank tab (`data:,`) fails due to the **Same-Origin Policy**. You can't set a cookie for `example.com` while you are on `about:blank`.
-3.  **Bot Detection**: Repeated logins flag your IP/Account as suspicious.
+- Cookies visible to Selenium on the current page
+- `localStorage` for the current origin
+- `sessionStorage` for the current origin
+- IndexedDB database names, versions, and object-store names as diagnostic metadata
 
-## ✅ The Solution: Teleport
+IndexedDB records are **not** exported or restored. The library does not capture state from every origin visited by the browser. Some applications also bind sessions to devices, IP addresses, server-side state, or other signals, so a restored file does not guarantee an authenticated session.
 
-**Selenium Teleport** acts as a universal state bridge.
-1.  **Captures Everything**: Saves Cookies, LocalStorage, and SessionStorage.
-2.  **Bypasses Security**: Automatically navigates to the site's "Base Domain" first to satisfy the Same-Origin Policy.
-3.  **Injects & Teleports**: Safely injects the state and "teleports" the browser to your destination URL, instantly authenticated.
-
-```mermaid
-sequenceDiagram
-    participant S as Script
-    participant B as Browser
-    participant F as State File
-
-    %% Save Flow
-    Note over S,F: 💾 SAVE STATE
-    S->>B: Login manually or via script
-    S->>B: Extract Cookies + Local/Session Storage
-    B->>F: Save to JSON (or encrypted)
-
-    %% Restore Flow
-    Note over S,F: 🚀 TELEPORT (Restore)
-    S->>B: Open New Browser
-    S->>F: Load JSON
-    S->>B: 1. Navigate to Base Domain (e.g. example.com)
-    Note right of B: Satisfies Same-Origin Policy
-    S->>B: 2. Inject Cookies + Storage
-    S->>B: 3. Navigate to Dashboard
-    Note right of B: ⚡ User is instantly logged in!
-```
-
-## ✨ Features
-
-### Core Features
-- **Complete State Capture** - Cookies, LocalStorage, SessionStorage, IndexedDB info
-- **Same-Origin Bypass** - Navigates to base domain before injection
-- **Anti-Detection** - Built-in undetected-chromedriver integration
-- **StealthBot Support** - Full integration with sb-stealth-wrapper v0.4.0+
-- **Context Manager** - Auto-save on successful exit
-
-### Security Features (v2.1.0)
-- **🔐 State Encryption** - Encrypt state files using Fernet symmetric encryption
-- **⏰ Token Expiry Validation** - Automatically detect and remove expired cookies
-- **🌐 Domain Validation** - Prevent cross-domain state injection attacks
-- **🛡️ Path Sanitization** - Prevent path traversal attacks
-- **🚫 SSRF Protection** - Block requests to private/internal IPs
-
-### Enterprise Features
-- **Configuration Management** - Environment variables or config file based settings
-- **Modular Architecture** - Clean separation of concerns for maintainability
-- **Comprehensive Exceptions** - Detailed error hierarchy for proper handling
-- **GDPR Compliance** - Secure state deletion functionality
-
-## 📦 Installation
+## Installation
 
 ```bash
-# Basic installation
+# Regular Selenium support
 pip install selenium-teleport
 
-# With stealth mode (Cloudflare bypass)
+# Optional undetected-chromedriver integration
+pip install selenium-teleport[undetected]
+
+# Optional sb-stealth-wrapper integration
 pip install selenium-teleport[stealth]
 
-# With encryption support
+# Optional Fernet encryption
 pip install selenium-teleport[security]
 
-# Full installation (all features)
-pip install selenium-teleport[stealth,security]
+# All optional integrations
+pip install selenium-teleport[undetected,stealth,security]
 ```
 
-## 🏃 Quick Start
+The base installation uses Selenium's regular Chrome driver by default. Browser and driver availability are still managed by Selenium and the local environment.
 
-### Standard Mode
+## Quick start
 
 ```python
-from selenium_teleport import create_driver, Teleport
+from selenium_teleport import Teleport, create_driver
 
+# Regular Selenium is the default; set use_undetected=True only after
+# installing selenium-teleport[undetected].
 driver = create_driver(profile_path="my_profile")
 
-with Teleport(driver, "session.json") as t:
-    if t.has_state():
-        t.load("https://example.com/dashboard")
-    else:
-        driver.get("https://example.com/login")
-        # Login manually...
-
-driver.quit()
+try:
+    with Teleport(driver, "session.json") as teleport:
+        if teleport.has_state():
+            teleport.load("https://example.com/dashboard")
+        else:
+            driver.get("https://example.com/login")
+            # Complete login here. State is saved on successful context exit.
+finally:
+    driver.quit()
 ```
 
-### � With Encryption
+`Teleport` auto-saves only when the context exits without an exception. Auto-save errors are logged; call `teleport.save()` directly if the caller must handle save failures.
+
+## Encryption
+
+State files contain authentication material. Prefer encryption and keep the key outside source control.
 
 ```python
 import os
-from selenium_teleport import create_driver, Teleport, generate_key
 
-# Generate a key once and store it securely
-# key = generate_key()
-# print(key)  # Save this!
+from selenium_teleport import Teleport, create_driver
 
-# Set encryption key via environment variable
-os.environ["TELEPORT_ENCRYPTION_KEY"] = "your-fernet-key-here"
+# TELEPORT_ENCRYPTION_KEY must contain an existing Fernet key.
+# Generate one separately with selenium_teleport.generate_key().
+os.environ["TELEPORT_ENCRYPTION_KEY"] = "your-fernet-key"
 
 driver = create_driver()
-
-with Teleport(driver, "session.enc", encrypt=True) as t:
-    if t.has_state():
-        t.load("https://example.com/dashboard")
-    else:
-        driver.get("https://example.com/login")
-        # Login...
-
-driver.quit()
+try:
+    with Teleport(driver, "session.enc", encrypt=True) as teleport:
+        if teleport.has_state():
+            teleport.load("https://example.com/dashboard")
+        else:
+            driver.get("https://example.com/login")
+finally:
+    driver.quit()
 ```
 
-### 🛡️ Stealth Mode (sb-stealth-wrapper v0.4.0+)
+Setting `TELEPORT_ENCRYPTION_KEY` supplies a key but does not by itself encrypt saves. Pass `encrypt=True` to `Teleport`, `teleport_session`, `save_state`, or `save_state_stealth`.
 
-For sites with bot detection (Cloudflare, DataDome, etc.):
+## Restore behavior and safety checks
+
+`load_state(driver, file_path, destination_url)` performs these steps:
+
+1. Rejects non-HTTP(S) destination URLs and literal loopback, link-local, private, reserved, or otherwise non-public IP addresses.
+2. Applies `TELEPORT_ALLOWED_DOMAINS` and `TELEPORT_BLOCKED_DOMAINS` when configured.
+3. Validates the saved source against the destination.
+   - State containing `localStorage` or `sessionStorage` must be restored to the same origin (scheme, host, and effective port).
+   - Cookie-only state may be restored across subdomains that resolve to the same supported root-domain form.
+4. Removes expired cookies by default and raises `ExpiredSessionError` if every saved cookie has expired.
+5. Navigates to the destination origin, injects cookies and origin storage, then navigates to the full destination URL.
+
+URL validation does not resolve hostnames before navigation, so it does not protect against a public hostname that resolves to a private address or changes resolution between checks. Treat destination URLs as trusted application input even when validation is enabled.
+
+Path sanitization rejects parent-directory traversal syntax. It is not a filesystem sandbox unless the calling application also controls the directory in which state files may be written.
+
+## API reference
+
+### State management
+
+| Function | Description |
+|---|---|
+| `save_state(driver, file_path, encrypt=False, encryption_key=None)` | Save current-origin cookies and storage |
+| `load_state(driver, file_path, destination_url, validate_expiry=True, validate_domain=True)` | Validate and restore state, then navigate |
+| `delete_state(file_path, secure=True)` | Best-effort overwrite, then delete the state file |
+| `get_state_info(file_path, encryption_key=None)` | Return state-file metadata and item counts |
+
+`delete_state(..., secure=True)` performs a best-effort overwrite. Filesystems, snapshots, journaling, and storage hardware can retain copies; this is not a guarantee of forensic erasure or regulatory compliance.
+
+### Context managers
+
+| API | Description |
+|---|---|
+| `Teleport(driver, file_path, auto_save=True, encrypt=False)` | Object-oriented load/save context manager |
+| `teleport_session(driver, file_path, destination_url=None, encrypt=False)` | Functional context manager |
+
+### Optional stealth integration
 
 ```python
+from selenium_teleport import load_state_stealth, save_state_stealth
 from sb_stealth_wrapper import StealthBot
-from selenium_teleport import save_state_stealth, load_state_stealth
-import os
 
-# Use success_criteria to confirm page is fully loaded
 with StealthBot(success_criteria="Dashboard") as bot:
-    # Restore state if it exists
-    if os.path.exists("state.json"):
-        load_state_stealth(bot, "state.json", "https://example.com")
-    else:
-        bot.safe_get("https://example.com/login")
-        # Login using bot.smart_click(), etc.
-    
-    # Save state for next time
+    load_state_stealth(bot, "state.json", "https://example.com/dashboard")
+    # Continue automation.
     save_state_stealth(bot, "state.json")
 ```
 
-Or use `create_driver` with stealth mode:
+These helpers use `bot.sb` for state access. They do not guarantee bot-detection or challenge bypass; results depend on the site, browser, dependency versions, and environment.
 
-```python
-from selenium_teleport import create_driver, save_state_stealth, load_state_stealth
-
-with create_driver(use_stealth_wrapper=True, success_criteria="Welcome") as bot:
-    bot.safe_get("https://example.com")
-    # Your automation code...
-```
-
-## 📖 API Reference
-
-### State Management
-
-| Function | Description |
-|----------|-------------|
-| `save_state(driver, file_path, encrypt=False)` | Save Cookies, LocalStorage, SessionStorage to JSON |
-| `load_state(driver, file_path, url, validate_expiry=True, validate_domain=True)` | Load state and navigate to URL with validation |
-| `delete_state(file_path, secure=True)` | Securely delete state file (GDPR compliance) |
-| `get_state_info(file_path)` | Get metadata about a state file |
-
-### Stealth Mode (sb-stealth-wrapper)
-
-| Function | Description |
-|----------|-------------|
-| `save_state_stealth(bot, file_path, encrypt=False)` | Save state using bot.sb methods |
-| `load_state_stealth(bot, file_path, url, validate_expiry=True)` | Load state and navigate using bot.sb |
-
-### Context Managers
-
-| Class/Function | Description |
-|----------------|-------------|
-| `Teleport(driver, file_path, auto_save=True, encrypt=False)` | Context manager with auto-save |
-| `teleport_session(driver, file_path, destination_url=None)` | Functional context manager |
-
-### Security Functions
-
-| Function | Description |
-|----------|-------------|
-| `generate_key()` | Generate a new Fernet encryption key |
-| `encrypt_state(state, key)` | Encrypt a state dictionary |
-| `decrypt_state(data, key)` | Decrypt encrypted state data |
-| `validate_domain_match(state_domain, target_url)` | Check if domains match |
-| `remove_expired_cookies(cookies)` | Filter out expired cookies |
-
-### Configuration
-
-| Function | Description |
-|----------|-------------|
-| `TeleportConfig` | Configuration dataclass |
-| `get_config()` | Get global configuration |
-| `set_config(config)` | Set global configuration |
-
-### `create_driver()` Parameters
+### Driver creation
 
 | Parameter | Default | Description |
-|-----------|---------|-------------|
-| `profile_path` | `"selenium_profile"` | Browser profile location |
-| `headless` | `False` | Headless mode (not recommended for stealth) |
-| `browser` | `"chrome"` | Browser to use (`"chrome"` or `"edge"`) |
-| `use_undetected` | `True` | Use undetected-chromedriver |
-| `use_stealth_wrapper` | `False` | Use sb-stealth-wrapper |
-| `success_criteria` | `None` | (Stealth) Text confirming page is loaded |
-| `proxy` | `None` | (Stealth) Proxy in format `user:pass@host:port` |
+|---|---:|---|
+| `profile_path` | configured `selenium_profile` directory | Browser profile location |
+| `headless` | `False` | Run in headless mode |
+| `browser` | `"chrome"` | `"chrome"` or `"edge"` |
+| `use_undetected` | `False` | Use optional undetected-chromedriver integration |
+| `use_stealth_wrapper` | `False` | Return an optional `StealthBot` instance |
+| `success_criteria` | `None` | Text passed to `StealthBot` |
+| `proxy` | `None` | Proxy passed to `StealthBot` |
 
-## ⚙️ Configuration
+## Configuration
 
-### Environment Variables
+| Environment variable | Effect |
+|---|---|
+| `TELEPORT_ENCRYPTION_KEY` | Fernet key used when encryption is explicitly enabled |
+| `TELEPORT_VALIDATE_EXPIRY` | Enable or disable cookie-expiry validation |
+| `TELEPORT_VALIDATE_DOMAIN` | Enable or disable source/destination validation |
+| `TELEPORT_ALLOWED_DOMAINS` | Comma-separated root-domain allowlist |
+| `TELEPORT_BLOCKED_DOMAINS` | Comma-separated root-domain blocklist |
+| `TELEPORT_PROFILE_PATH` | Default browser-profile directory |
+| `TELEPORT_LOG_LEVEL` | Configured log level value |
 
-| Variable | Description |
-|----------|-------------|
-| `TELEPORT_ENCRYPTION_KEY` | Fernet encryption key (enables encryption) |
-| `TELEPORT_VALIDATE_EXPIRY` | `"true"` or `"false"` to validate cookie expiry |
-| `TELEPORT_VALIDATE_DOMAIN` | `"true"` or `"false"` to validate domain match |
-| `TELEPORT_LOG_LEVEL` | `DEBUG`, `INFO`, `WARNING`, `ERROR` |
-| `TELEPORT_ALLOWED_DOMAINS` | Comma-separated whitelist of domains |
-
-### Programmatic Configuration
+Configuration can also be supplied with `TeleportConfig` and `set_config()`.
 
 ```python
 from selenium_teleport import TeleportConfig, set_config
 
-config = TeleportConfig(
-    encryption_enabled=True,
-    encryption_key="your-key-here",
-    validate_expiry=True,
-    validate_domain=True,
-    log_level="INFO",
+set_config(
+    TeleportConfig(
+        validate_expiry=True,
+        validate_domain=True,
+        allowed_domains=["example.com"],
+    )
 )
-set_config(config)
 ```
 
-## 🚨 Exception Handling
+## Exceptions
 
-```python
-from selenium_teleport import (
-    TeleportError,           # Base exception
-    SecurityError,           # Security violations
-    DomainMismatchError,     # State domain doesn't match target
-    PathTraversalError,      # Path traversal attack detected
-    SSRFError,               # SSRF attack detected
-    EncryptionError,         # Encryption/decryption failed
-    StateError,              # State file issues
-    StateFileNotFoundError,  # State file doesn't exist
-    InvalidStateError,       # Invalid state file format
-    ExpiredSessionError,     # All cookies expired
-    DriverError,             # Driver creation issues
-)
+All package exceptions inherit from `TeleportError`. Common subclasses include:
 
-try:
-    load_state(driver, "state.json", "https://example.com")
-except DomainMismatchError as e:
-    print(f"Security: {e.message}")
-except ExpiredSessionError:
-    print("Session expired, need to re-login")
-except StateFileNotFoundError:
-    print("No saved state, performing fresh login")
+- `SecurityError`, `DomainMismatchError`, `PathTraversalError`, and `SSRFError`
+- `EncryptionError`
+- `StateFileNotFoundError`, `InvalidStateError`, and `ExpiredSessionError`
+- `DriverError` and `DriverNotFoundError`
+
+## Security guidance
+
+- Do not commit state files, browser profiles, encryption keys, screenshots, or saved cookies.
+- Use a dedicated, least-privileged test account.
+- Restrict state-file permissions and lifecycle outside the library.
+- Rotate or revoke sessions if a state file may have been exposed.
+- Validate application-specific success after restore; navigation alone does not prove authentication.
+
+## Development
+
+```bash
+pip install -e .[dev,security]
+pytest tests/ -v
+black --check selenium_teleport/ tests/
+isort --check-only selenium_teleport/ tests/
+mypy selenium_teleport/ --ignore-missing-imports
+python -m build
 ```
 
-## ⚠️ Important Notes
+## Author
 
-1. **Standard mode**: Uses `driver.get_cookies()` / `driver.execute_script()`
-2. **Stealth mode**: Uses `bot.sb` methods which maintain stable connection after challenge handling
-3. **Session persistence varies by site** - Some sites use complex auth beyond cookies
-4. **Encryption requires the `cryptography` package** - Install with `pip install selenium-teleport[security]`
-5. **State files contain sensitive tokens** - Always use `.gitignore` to exclude them
+**Dhiraj Das** — [dhirajdas.dev](https://www.dhirajdas.dev)
 
-## 🧪 Tested Sites
+## License
 
-- ✅ Hacker News
-- ✅ Reddit
-- ✅ Gmail (with persistent profile)
-- ✅ Various Cloudflare-protected sites (stealth mode)
-
-## 📁 Project Structure
-
-```
-selenium_teleport/
-├── __init__.py      # Public API
-├── drivers.py       # Driver creation
-├── state.py         # State save/load
-├── stealth.py       # StealthBot integration
-├── context.py       # Context managers
-├── security.py      # Encryption & validation
-├── config.py        # Configuration
-├── cookies.py       # Cookie utilities
-├── storage.py       # Storage extraction
-├── utils.py         # URL helpers
-└── exceptions.py    # Exception hierarchy
-```
-
-## 👨‍💻 Author
-
-**Dhiraj Das** - [dhirajdas.dev](https://www.dhirajdas.dev)
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License. See [LICENSE](LICENSE).
