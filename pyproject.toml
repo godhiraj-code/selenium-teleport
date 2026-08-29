@@ -7,8 +7,7 @@ name = "selenium-teleport"
 version = "2.1.1"
 description = "Save and restore current-origin cookies and web storage in Selenium automation."
 readme = "README.md"
-license = "MIT"
-license-files = ["LICENSE"]
+license = {text = "MIT"}
 authors = [
     {name = "Dhiraj Das"}
 ]
@@ -29,6 +28,7 @@ keywords = [
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
