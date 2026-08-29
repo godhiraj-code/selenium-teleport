@@ -7,9 +7,9 @@ skip login screens and setup flows in Selenium automation scripts.
 
 Features:
     - Persistent Chrome profile for maximum compatibility
-    - Anti-detection measures built-in
-    - Save complete browser state to a JSON file (with optional encryption)
-    - Restore state and "teleport" to any authenticated page
+    - Optional undetected-chromedriver and StealthBot integrations
+    - Save current-origin cookies and web storage (with optional encryption)
+    - Restore state to a compatible destination origin
     - Context manager for automatic state management
     - StealthBot-compatible functions for sb-stealth-wrapper
     - Security features: encryption, domain validation, path sanitization
@@ -34,7 +34,7 @@ With Encryption:
     ...     pass
 """
 
-__version__ = "2.1.0"
+__version__ = "2.1.1"
 __author__ = "Dhiraj Das"
 __license__ = "MIT"
 

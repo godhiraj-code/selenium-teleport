@@ -105,6 +105,67 @@ class TestLoadState:
                 validate_domain=True,
             )
 
+    def test_load_state_rejects_cross_origin_storage(self, mock_driver, state_file):
+        """localStorage and sessionStorage must stay on their saved origin."""
+        from selenium_teleport.exceptions import DomainMismatchError
+        from selenium_teleport.state import load_state
+
+        with pytest.raises(DomainMismatchError):
+            load_state(mock_driver, state_file, "https://app.example.com/dashboard")
+
+        mock_driver.get.assert_not_called()
+
+    def test_load_state_enforces_allowed_domains(self, mock_driver, state_file, monkeypatch):
+        """The configured allowlist must gate navigation."""
+        import selenium_teleport.config as config_module
+        from selenium_teleport.config import TeleportConfig
+        from selenium_teleport.exceptions import SecurityError
+        from selenium_teleport.state import load_state
+
+        monkeypatch.setattr(
+            config_module,
+            "_global_config",
+            TeleportConfig(allowed_domains=["allowed.example"]),
+        )
+
+        with pytest.raises(SecurityError):
+            load_state(mock_driver, state_file, "https://example.com/dashboard")
+
+        mock_driver.get.assert_not_called()
+
+    def test_load_state_enforces_blocked_domains(self, mock_driver, state_file, monkeypatch):
+        """The configured blocklist must gate navigation."""
+        import selenium_teleport.config as config_module
+        from selenium_teleport.config import TeleportConfig
+        from selenium_teleport.exceptions import SecurityError
+        from selenium_teleport.state import load_state
+
+        monkeypatch.setattr(
+            config_module,
+            "_global_config",
+            TeleportConfig(blocked_domains=["example.com"]),
+        )
+
+        with pytest.raises(SecurityError):
+            load_state(mock_driver, state_file, "https://example.com/dashboard")
+
+        mock_driver.get.assert_not_called()
+
+    def test_load_state_allows_cookie_only_sibling_subdomain(self, mock_driver, state_file):
+        """Cookie-only state retains the root-domain behavior."""
+        from selenium_teleport.state import load_state
+
+        with open(state_file, "r", encoding="utf-8") as state_handle:
+            state = json.load(state_handle)
+        state["localStorage"] = {}
+        state["sessionStorage"] = {}
+        with open(state_file, "w", encoding="utf-8") as state_handle:
+            json.dump(state, state_handle)
+
+        load_state(mock_driver, state_file, "https://app.example.com/dashboard")
+
+        assert mock_driver.get.call_count == 2
+
 
 class TestStateInfo:
     """Tests for get_state_info function."""
