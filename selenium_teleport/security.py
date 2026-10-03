@@ -383,12 +383,16 @@ def sanitize_file_path(path: str, base_dir: Optional[str] = None) -> str:
 
     # Normalize the path
     normalized = os.path.normpath(path)
-    absolute = os.path.abspath(normalized)
+    absolute = os.path.realpath(os.path.abspath(normalized))
 
     # If base_dir specified, ensure path is within it
     if base_dir:
-        base_absolute = os.path.abspath(base_dir)
-        if not absolute.startswith(base_absolute):
+        base_absolute = os.path.realpath(os.path.abspath(base_dir))
+        try:
+            contained = os.path.commonpath([absolute, base_absolute]) == base_absolute
+        except ValueError:
+            contained = False
+        if not contained:
             raise PathTraversalError(path)
 
     # Double-check for traversal after normalization
