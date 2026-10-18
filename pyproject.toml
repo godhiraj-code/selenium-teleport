@@ -71,6 +71,7 @@ Author = "https://www.dhirajdas.dev"
 Documentation = "https://github.com/godhiraj-code/selenium-teleport#readme"
 Repository = "https://github.com/godhiraj-code/selenium-teleport"
 Issues = "https://github.com/godhiraj-code/selenium-teleport/issues"
+X = "https://x.com/dkkkkd"
 
 [tool.setuptools.packages.find]
 include = ["selenium_teleport*"]

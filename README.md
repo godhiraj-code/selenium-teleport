@@ -205,7 +205,7 @@ python -m build
 
 ## Author
 
-**Dhiraj Das** — [dhirajdas.dev](https://www.dhirajdas.dev)
+**Dhiraj Das** — [dhirajdas.dev](https://www.dhirajdas.dev) · [Follow @dkkkkd on X](https://x.com/dkkkkd)
 
 ## License
 
